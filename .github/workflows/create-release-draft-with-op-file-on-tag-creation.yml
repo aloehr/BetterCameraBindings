@@ -1,0 +1,23 @@
+name: create-release-draft-with-op-file-on-tag-creation
+run-name: Creating release draft for new tag ${{ github.ref_name }} triggered by ${{ github.actor }}
+
+on:
+  push:
+    tags:
+      - '**'
+
+jobs:
+  creating-release-draft-with-op-file:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: zip files into BetterCameraBindings.op
+        run: zip -r -q BetterCameraBindings.op info.toml src
+      - name: Create release draft with .op file
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: BetterCameraBindings.op
+          draft: true
