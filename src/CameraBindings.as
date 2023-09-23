@@ -43,6 +43,8 @@ class BindingsManager {
     private CameraBinding newBinding;
     private bool newBindingValidButton = false;
 
+    private bool bindingsEnabled = true;
+
     BindingsManager() {}
 
     void addBinding(CameraBinding &in camBind) {
@@ -53,6 +55,10 @@ class BindingsManager {
     void deleteBinding(uint idx) {
         this.bindings.RemoveAt(idx);
         this.saveData();
+    }
+
+    void setBindingsEnabled(bool enable) {
+        this.bindingsEnabled = enable;
     }
 
     void loadData() {
@@ -101,13 +107,13 @@ class BindingsManager {
     void render() {
         this.initCreateNewBindingPopup();
 
-        const vec2 startCursorPos = UI::GetCursorPos();
-
-        UI::SetCursorPos(startCursorPos);
-
         if (UI::Button(Icons::Plus)) {
             UI::OpenPopup("createNewBindingPopup");
         }
+
+        UI::SameLine();
+        g_bindingsEnabled = UI::Checkbox("enable Bindings", g_bindingsEnabled);
+        this.setBindingsEnabled(g_bindingsEnabled);
 
         UI::SameLine();
         renderAlignedText("\\$555" + Meta::ExecutingPlugin().Version, 1.f, 0.f);
@@ -386,7 +392,7 @@ class BindingsManager {
     }
 
     void checkBindings() {
-        if (this.bindings.Length == 0) return;
+        if (this.bindings.Length == 0 || !this.bindingsEnabled) return;
 
         auto app = GetApp();
         if (app.CurrentPlayground is null) return;
