@@ -1,110 +1,23 @@
 namespace BCB {
 
-enum BindMode {
-    DEFAULT,
-    DEFAULT_REVERSED,
-    ONLY_NORMAL_CAM,
-    ONLY_ALT_CAM
-}
-
-class CameraBinding {
-    int padId;
-    BindMode mode;
-    string padName;
-    CInputScriptPad::EPadType padType;
-    CInputScriptPad::EButton bindButton;
-    CameraType camType;
-
-    CameraBinding() {}
-
-    CameraBinding(
-        int id,
-        BindMode mode,
-        const string &in name,
-        CInputScriptPad::EPadType type,
-        CInputScriptPad::EButton bindButton,
-        CameraType ct
-    ) {
-        this.padId = id;
-        this.mode = mode;
-        this.padName = name;
-        this.padType = type;
-        this.bindButton = bindButton;
-        this.camType = ct;
-    }
-}
-
-class BindingsManager {
-    CameraBinding@[] bindings;
-    Camera cam;
+class BindingsManagerView {
+    private BindingsManager@ bindingsManager = null;
 
     private IdxWrapper comboBoxCameraTypeIdx;
     private IdxWrapper comboBoxBindModeIdx;
     private CameraBinding newBinding;
     private bool newBindingValidButton = false;
 
-    private bool bindingsEnabled = true;
-
-    BindingsManager() {}
-
-    void addBinding(CameraBinding &in camBind) {
-        this.bindings.InsertLast(camBind);
-        this.saveData();
-    }
-
-    void deleteBinding(uint idx) {
-        this.bindings.RemoveAt(idx);
-        this.saveData();
-    }
-
-    void setBindingsEnabled(bool enable) {
-        this.bindingsEnabled = enable;
-    }
-
-    void loadData() {
-        auto tokens = g_bindingsData.Split(";");
-
-        if (tokens.Length % 6 != 0) {
-            g_bindingsData = "";
-            return;
-        }
-
-        uint i = 0;
-        while (i < tokens.Length) {
-            CameraBinding cur;
-
-            cur.padId      = Text::ParseInt(tokens[i++]);
-            cur.mode       = BindMode(Text::ParseInt(tokens[i++]));
-            cur.padName    = tokens[i++];
-            cur.padType    = CInputScriptPad::EPadType(Text::ParseInt(tokens[i++]));
-            cur.bindButton = CInputScriptPad::EButton(Text::ParseInt(tokens[i++]));
-            cur.camType    = CameraType(Text::ParseInt(tokens[i++]));
-
-            this.bindings.InsertLast(cur);
-        }
-    }
-
-    void saveData() {
-        g_bindingsData = "";
-
-        for (uint i = 0; i < this.bindings.Length; ++i) {
-
-            auto cur = this.bindings[i];
-
-            g_bindingsData += tostring(cur.padId) + ";";
-            g_bindingsData += tostring(int(cur.mode)) + ";";
-            g_bindingsData += cur.padName + ";";
-            g_bindingsData += tostring(int(cur.padType)) + ";";
-            g_bindingsData += tostring(int(cur.bindButton)) + ";";
-            g_bindingsData += tostring(int(cur.camType));
-
-            if (i < this.bindings.Length - 1) {
-                g_bindingsData += ";";
-            }
-        }
+    BindingsManagerView(BindingsManager@ bm) {
+        @this.bindingsManager = bm;
     }
 
     void render() {
+        if (this.bindingsManager is null || !this.bindingsManager.dataLoaded) {
+            renderAlignedText("Loading...");
+            return;
+        }
+
         this.initCreateNewBindingPopup();
 
         if (UI::Button(Icons::Plus)) {
@@ -112,8 +25,8 @@ class BindingsManager {
         }
 
         UI::SameLine();
-        g_bindingsEnabled = UI::Checkbox("enable Bindings", g_bindingsEnabled);
-        this.setBindingsEnabled(g_bindingsEnabled);
+        this.bindingsManager.bindingsEnabled = UI::Checkbox("enable Bindings", this.bindingsManager.bindingsEnabled);
+        g_bindingsEnabled = this.bindingsManager.bindingsEnabled;
 
         UI::SameLine();
         renderAlignedText("\\$555" + Meta::ExecutingPlugin().Version, 1.f, 0.f);
@@ -127,6 +40,8 @@ class BindingsManager {
     }
 
     void initCreateNewBindingPopup() {
+        if (this.bindingsManager is null) return;
+
         UI::PushStyleColor(UI::Col::Border, vec4(0.7f, 0.7f, 0.7f, 1.f));
         if (UI::BeginPopup("createNewBindingPopup")) {
             if (!this.newBindingValidButton) {
@@ -163,7 +78,6 @@ class BindingsManager {
                 };
 
                 string[] camTypesStrings;
-
                 for (uint i = 0; i < camTypes.Length; ++i) {
                     camTypesStrings.InsertLast(tostring(camTypes[i]));
                 }
@@ -239,7 +153,6 @@ class BindingsManager {
                 };
 
                 string[] bindModesStrings;
-
                 for (uint i = 0; i < bindModes.Length; ++i) {
                     bindModesStrings.InsertLast(tostring(bindModes[i]));
                 }
@@ -255,21 +168,17 @@ class BindingsManager {
                 UI::BeginGroup();
                 UI::BeginDisabled(!readyToSaveBind);
 
-                bool buttonReturn = false;
-
                 if (!readyToSaveBind) {
-                    buttonReturn = renderGrayButton(Icons::Check);
-
+                    renderGrayButton(Icons::Check);
                 } else {
-                    buttonReturn = renderGreenButton(Icons::Check);
+                    if (renderGreenButton(Icons::Check)) {
+                        newBinding.mode = bindModes[comboBoxBindModeIdx.i];
+                        newBinding.camType = camTypes[comboBoxCameraTypeIdx.i];
+                        this.bindingsManager.addBinding(this.newBinding);
+                        UI::CloseCurrentPopup();
+                    }
                 }
 
-                if (buttonReturn) {
-                    newBinding.mode = bindModes[comboBoxBindModeIdx.i];
-                    newBinding.camType = camTypes[comboBoxCameraTypeIdx.i];
-                    this.addBinding(this.newBinding);
-                    UI::CloseCurrentPopup();
-                }
                 UI::EndDisabled();
                 UI::EndGroup();
 
@@ -296,13 +205,15 @@ class BindingsManager {
     }
 
     void renderBindings() {
-        if (this.bindings.Length == 0) {
+        if (this.bindingsManager is null) return;
+
+        if (this.bindingsManager.bindings.Length == 0) {
             const string text = "No Bindings";
             renderAlignedText(text);
         }
 
-        for (uint i = 0; i < this.bindings.Length; ++i) {
-            auto cur = this.bindings[i];
+        for (uint i = 0; i < this.bindingsManager.bindings.Length; ++i) {
+            auto cur = this.bindingsManager.bindings[i];
 
             UI::PushID(tostring(i));
             UI::PushStyleColor(UI::Col::TableBorderStrong, vec4(0.35f ,0.35f ,0.35f ,1.f));
@@ -337,7 +248,7 @@ class BindingsManager {
                     UI::SameLine();
 
                     if (renderGreenButton(Icons::Check)) {
-                        this.deleteBinding(i);
+                        this.bindingsManager.deleteBinding(i);
                         UI::CloseCurrentPopup();
                     }
                     UI::SameLine();
@@ -352,7 +263,6 @@ class BindingsManager {
 
                 vec2 dummySize(vec2(UI::GetContentRegionAvail().x - buttonSize.x - spacing.x, buttonSize.y));
                 UI::Dummy(dummySize);
-
                 UI::SameLine();
 
                 if (renderRedButton(Icons::Times, buttonSize)) {
@@ -368,9 +278,7 @@ class BindingsManager {
     }
 
     void checkNextButtonPress() {
-
         auto app = GetApp();
-
         auto ip = app.InputPort;
 
         for (uint i = 0; i < ip.Script_Pads.Length; ++i) {
@@ -390,66 +298,6 @@ class BindingsManager {
             }
         }
     }
-
-    void checkBindings() {
-        if (this.bindings.Length == 0 || !this.bindingsEnabled) return;
-
-        auto app = GetApp();
-        if (app.CurrentPlayground is null) return;
-
-        auto ip = app.InputPort;
-
-        for (uint i = 0; i < ip.Script_Pads.Length; ++i) {
-            auto sp = ip.Script_Pads[i];
-
-            if (sp.Type == CInputScriptPad::EPadType::Keyboard || sp.Type == CInputScriptPad::EPadType::Mouse)
-                continue;
-
-            for (uint j = 0; j < this.bindings.Length; ++j) {
-                auto binding = this.bindings[j];
-
-                if (sp.Type != binding.padType || sp.ControllerId != binding.padId)
-                    continue;
-
-                for (uint k = 0; k < sp.ButtonEvents.Length; ++k) {
-                    if (binding.bindButton == sp.ButtonEvents[k]) {
-
-                        if (binding.mode == BindMode::ONLY_NORMAL_CAM) {
-                            cam.CurAltMode = CameraAltMode::OFF;
-                            cam.CurCam = binding.camType;
-                        } else if (binding.mode == BindMode::ONLY_ALT_CAM) {
-                            cam.CurAltMode = CameraAltMode::ON;
-                            cam.CurCam = binding.camType;
-                        } else if (binding.mode == BindMode::DEFAULT) {
-                            if (cam.CurCam != binding.camType) {
-                                cam.CurAltMode = CameraAltMode::OFF;
-                                cam.CurCam = binding.camType;
-                            } else {
-                                if (cam.CurAltMode == CameraAltMode::OFF) {
-                                    cam.CurAltMode = CameraAltMode::ON;
-                                } else {
-                                    cam.CurAltMode = CameraAltMode::OFF;
-                                }
-                            }
-                        } else if (binding.mode == BindMode::DEFAULT_REVERSED) {
-                            if (cam.CurCam != binding.camType) {
-                                cam.CurAltMode = CameraAltMode::ON;
-                                cam.CurCam = binding.camType;
-                            } else {
-                                if (cam.CurAltMode == CameraAltMode::OFF) {
-                                    cam.CurAltMode = CameraAltMode::ON;
-                                } else {
-                                    cam.CurAltMode = CameraAltMode::OFF;
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
-    }
 }
 
-} // Namespace BCB
+} // namespace BCB
