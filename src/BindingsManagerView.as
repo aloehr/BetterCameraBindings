@@ -5,7 +5,6 @@ class BindingsManagerView {
 
     private IdxWrapper comboBoxCameraTypeIdx;
     private IdxWrapper comboBoxBindModeIdx;
-    private CameraBinding newBinding;
     private bool newBindingValidButton = false;
 
     BindingsManagerView(BindingsManager@ bm) {
@@ -18,10 +17,10 @@ class BindingsManagerView {
             return;
         }
 
-        this.initCreateNewBindingPopup();
+        //this.initCreateNewBindingPopup();
 
         if (UI::Button(Icons::Plus)) {
-            UI::OpenPopup("createNewBindingPopup");
+            //UI::OpenPopup("createNewBindingPopup");
         }
 
         UI::SameLine();
@@ -39,6 +38,7 @@ class BindingsManagerView {
         UI::EndChild();
     }
 
+    /*
     void initCreateNewBindingPopup() {
         if (this.bindingsManager is null) return;
 
@@ -203,15 +203,96 @@ class BindingsManagerView {
         }
         UI::PopStyleColor(1);
     }
+    */
 
     void renderBindings() {
         if (this.bindingsManager is null) return;
 
-        if (this.bindingsManager.bindings.Length == 0) {
-            const string text = "No Bindings";
-            renderAlignedText(text);
+        if (this.bindingsManager.deviceBindings.IsEmpty()) {
+            renderAlignedText("No Bindings");
         }
 
+        auto keys = this.bindingsManager.deviceBindings.GetKeys();
+
+        for (uint i = 0; i < keys.Length; ++i) {
+            auto dB = cast<DeviceBinding@>(this.bindingsManager.deviceBindings[keys[i]]);
+
+            // shoult actually not happen
+            if (dB.buttonBindings.Length == 0) continue;
+
+            UI::PushID(tostring(i));
+
+            if (UI::CollapsingHeader(dB.label)) {
+                if (UI::BeginTable("buttonBindings", 5, UI::TableFlags::SizingStretchSame  | UI::TableFlags::NoClip  | UI::TableFlags::PadOuterX | UI::TableFlags::None )) {
+
+                    for (uint j = 0; j < dB.buttonBindings.Length; ++j) {
+                        UI::PushID(tostring(j));
+
+                        auto curBB = dB.buttonBindings[j];
+
+                        UI::TableNextColumn();
+                        UI::AlignTextToFramePadding();
+                        if (dB.type == CInputScriptPad::EPadType::Keyboard) {
+                            //UI::Text(tostring(VirtualKey(curBB.button)));
+                            renderAlignedText(tostring(VirtualKey(curBB.button)), 0.5f, 0.f);
+                        } else {
+                            //UI::Text(tostring(CInputScriptPad::EButton(curBB.button)));
+                            renderAlignedText(tostring(CInputScriptPad::EButton(curBB.button)), 0.5f, 0.f);
+                        }
+
+                        UI::TableNextColumn();
+                        UI::Text(tostring(curBB.camera));
+
+                        UI::TableNextColumn();
+                        UI::Text(tostring(curBB.trigger));
+
+                        UI::TableNextColumn();
+                        UI::Text(tostring(curBB.mode));
+
+                        UI::TableNextColumn();
+
+                        if (UI::BeginPopup("deleteButtonBinding")) {
+                            UI::AlignTextToFramePadding();
+                            UI::Text("Delete this binding?");
+                            UI::SameLine();
+
+                            if (renderGreenButton(Icons::Check)) {
+                                this.bindingsManager.deleteBinding(dB.id, j);
+                                UI::CloseCurrentPopup();
+                            }
+                            UI::SameLine();
+                            if (renderRedButton(Icons::Times)) {
+                                UI::CloseCurrentPopup();
+                            }
+                            UI::EndPopup();
+                        }
+
+                        string buttonLabel = Icons::Times;
+
+                        float framePaddingX = UI::GetStyleVarVec2(UI::StyleVar::FramePadding).x;
+                        float textSizeX = Draw::MeasureString(buttonLabel).x;
+                        float buttonSizeX = framePaddingX * 2.f + textSizeX;
+
+                        if (UI::GetContentRegionAvail().x - buttonSizeX > 0.f) {
+                            UI::PushStyleVar(UI::StyleVar::ItemSpacing, vec2(0.f, 0.f));
+                            UI::Dummy(vec2(UI::GetContentRegionAvail().x - buttonSizeX, 0.f));
+                            UI::SameLine();
+                            UI::PopStyleVar(1);
+                        }
+
+                        if (renderRedButton(buttonLabel)) {
+                            UI::OpenPopup("deleteButtonBinding");
+                        }
+
+                        UI::PopID();
+                    }
+                    UI::EndTable();
+                }
+            }
+
+            UI::PopID();
+        }
+        /*
         for (uint i = 0; i < this.bindingsManager.bindings.Length; ++i) {
             auto cur = this.bindingsManager.bindings[i];
 
@@ -275,9 +356,11 @@ class BindingsManagerView {
             UI::PopStyleColor(1);
             UI::PopID();
         }
+        */
     }
 
     void checkNextButtonPress() {
+        /*
         auto app = GetApp();
         auto ip = app.InputPort;
 
@@ -297,6 +380,7 @@ class BindingsManagerView {
                 return;
             }
         }
+        */
     }
 }
 
