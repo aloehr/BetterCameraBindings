@@ -28,24 +28,11 @@ class ButtonBinding {
 }
 
 class DeviceBinding {
-    int id;
-    CInputScriptPad::EPadType type;
-    string name;
+    DeviceInfo @info;
     ButtonBinding@[] buttonBindings;
-    string label;
 
     DeviceBinding(int id, CInputScriptPad::EPadType type, const string &in name) {
-        this.id = id;
-        this.type = type;
-        this.name = name;
-
-        if (this.type == CInputScriptPad::EPadType::Keyboard) {
-            this.label = Icons::KeyboardO;
-        } else {
-            this.label = Icons::Gamepad;
-        }
-
-        this.label += " " + this.name + "   \\$888#" + tostring(this.id) + " Type: " + tostring(this.type) + "";
+        @this.info = DeviceInfo(id, type, name);
     }
 }
 
@@ -185,10 +172,10 @@ class BindingsManager {
             for (uint j = 0; j < deviceBinding.buttonBindings.Length; ++j) {
                 auto curBB = deviceBinding.buttonBindings[j];
 
-                g_bindingsData += tostring(deviceBinding.id) + ";";
+                g_bindingsData += tostring(deviceBinding.info.id) + ";";
                 g_bindingsData += tostring(int(curBB.mode)) + ";";
-                g_bindingsData += deviceBinding.name + ";";
-                g_bindingsData += tostring(int(deviceBinding.type)) + ";";
+                g_bindingsData += deviceBinding.info.name + ";";
+                g_bindingsData += tostring(int(deviceBinding.info.type)) + ";";
                 g_bindingsData += tostring(int(curBB.button)) + ";";
                 g_bindingsData += tostring(int(curBB.camera)) + ";";
                 g_bindingsData += tostring(int(curBB.trigger));

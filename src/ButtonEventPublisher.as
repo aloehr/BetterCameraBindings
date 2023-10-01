@@ -44,6 +44,27 @@ class KeyboardButtonEvent : ButtonEvent {
     }
 }
 
+class DeviceInfo {
+    int id;
+    CInputScriptPad::EPadType type;
+    string name;
+    string label;
+
+    DeviceInfo(int id, CInputScriptPad::EPadType type, const string &in name) {
+        this.id = id;
+        this.type = type;
+        this.name = name;
+
+        if (this.type == CInputScriptPad::EPadType::Keyboard) {
+            this.label = Icons::KeyboardO;
+        } else {
+            this.label = Icons::Gamepad;
+        }
+
+        this.label += " " + this.name + "   \\$888#" + tostring(this.id) + " Type: " + tostring(this.type) + "";
+    }
+}
+
 // callback defintion
 funcdef void ButtonEventCallback(const ButtonEvent @event);
 
@@ -122,6 +143,20 @@ class ButtonEventPublisher {
         this.broadcastSubs.RemoveAt(idx);
 
         return true;
+    }
+
+    DeviceInfo@ getDeviceInfo(int deviceID) {
+        auto ip = GetApp().InputPort;
+
+        for (uint i = 0; i < ip.Script_Pads.Length; ++i) {
+            CInputScriptPad @sp = ip.Script_Pads[i];
+
+            if (sp.ControllerId == deviceID) {
+                return DeviceInfo(sp.ControllerId, sp.Type, sp.ModelName);
+            }
+        }
+
+        return null;
     }
 
     void updateHook() {

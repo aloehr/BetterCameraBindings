@@ -232,7 +232,7 @@ class BindingsManagerView {
 
                         UI::TableNextColumn();
                         UI::AlignTextToFramePadding();
-                        if (dB.type == CInputScriptPad::EPadType::Keyboard) {
+                        if (dB.info.type == CInputScriptPad::EPadType::Keyboard) {
                             //UI::Text(tostring(VirtualKey(curBB.button)));
                             renderAlignedText(tostring(VirtualKey(curBB.button)), 0.5f, 0.f);
                         } else {
@@ -257,7 +257,7 @@ class BindingsManagerView {
                             UI::SameLine();
 
                             if (renderGreenButton(Icons::Check)) {
-                                this.bindingsManager.deleteBinding(dB.id, j);
+                                this.bindingsManager.deleteBinding(dB.info.id, j);
                                 UI::CloseCurrentPopup();
                             }
                             UI::SameLine();
