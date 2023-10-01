@@ -20,9 +20,6 @@ void Main() {
     g_mainWindowLabel = pluginName + "###BCBmainWindow" + (isDevMode() ? "DEV" : "");
     g_menuItemLabel = pluginName + "###BCBmenuItem" + (isDevMode() ? "DEV" : "");
 
-    g_bindingsData = "v1;100;2;XInput Pad;3;8;18;0;100;0;XInput Pad;3;9;20;0;100;2;XInput Pad;3;23;21;2";
-    //g_bindingsData = "100;2;XInput Pad;3;8;18;100;0;XInput Pad;3;9;20;100;2;XInput Pad;3;23;21";
-
     g_bindingsManager.loadData();
     g_bindingsManager.bindingsEnabled = g_bindingsEnabled;
 }
@@ -30,7 +27,7 @@ void Main() {
 void RenderInterface() {
     if (!g_renderWindow) return;
 
-    UI::SetNextWindowSize(475, 320, UI::Cond::Appearing);
+    UI::SetNextWindowSize(485, 320, UI::Cond::Appearing);
     if (UI::Begin(g_mainWindowLabel, g_renderWindow)) {
 
         g_bindingsManagerView.render();

@@ -13,6 +13,10 @@ class IdxWrapper {
         this.i = i;
         this.valid = true;
     }
+
+    uint opImplConv() const {
+        return this.i;
+    }
 }
 
 // finds first char in str that matches any char in toFind

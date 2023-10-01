@@ -46,13 +46,14 @@ void renderComboBox(
     const string[] &in items,
     IdxWrapper &idx,
     const string &in preview = "",
+    uint startIdx = 0,
     int flags = UI::ComboFlags::None
 ) {
-    string currentlySelected = idx.valid ? items[idx.i] : preview;
+    string currentlySelected = idx.valid ? items[idx] : preview;
     if (UI::BeginCombo(label, currentlySelected, flags)) {
 
-        for (uint i = 0; i < items.Length; ++i) {
-            bool selected = idx.i == i;
+        for (uint i = startIdx; i < items.Length; ++i) {
+            bool selected = idx == i;
             if (UI::Selectable(items[i], selected)) {
                 idx.set(i);
             }
