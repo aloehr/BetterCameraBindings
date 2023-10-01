@@ -41,21 +41,6 @@ bool renderGrayButton(const string &in label, const vec2 &in size = vec2()) {
     return renderColoredButton(label, colGrayNormal, colGrayHovered, colGrayActive, size);
 }
 
-class IdxWrapper {
-    bool valid = false;
-    uint i = 0;
-
-    void reset() {
-        this.valid = false;
-        this.i = 0;
-    }
-
-    void set(uint i) {
-        this.i = i;
-        this.valid = true;
-    }
-}
-
 void renderComboBox(
     const string &in label,
     const string[] &in items,
@@ -63,12 +48,12 @@ void renderComboBox(
     const string &in preview = "",
     int flags = UI::ComboFlags::None
 ) {
-    string currentlySelected = idx.valid ? tostring(items[idx.i]) : preview;
+    string currentlySelected = idx.valid ? items[idx.i] : preview;
     if (UI::BeginCombo(label, currentlySelected, flags)) {
 
         for (uint i = 0; i < items.Length; ++i) {
             bool selected = idx.i == i;
-            if (UI::Selectable(tostring(items[i]), selected)) {
+            if (UI::Selectable(items[i], selected)) {
                 idx.set(i);
             }
 

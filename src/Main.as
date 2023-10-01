@@ -15,36 +15,13 @@ bool g_bindingsEnabled = true;
 [Setting hidden]
 string g_bindingsData = "";
 
-void cb(const BCB::ButtonEvent @e) {
-    if (e.type == BCB::ButtonEventType::KEYBOARD) {
-        const BCB::KeyboardButtonEvent @kbe = cast<const BCB::KeyboardButtonEvent@>(e);
-
-        print(tostring(e.type) + " " + tostring(kbe.getButton()) + " " + tostring(kbe.action));
-    } else if (e.type == BCB::ButtonEventType::CONTROLLER) {
-        const BCB::ControllerButtonEvent @pad = cast<const BCB::ControllerButtonEvent@>(e);
-
-        print(tostring(e.type) + " " + tostring(pad.getButton()) + " " + tostring(pad.action));
-    }
-}
-
-void cb2(const BCB::ButtonEvent @e) {
-    if (e.type == BCB::ButtonEventType::KEYBOARD) {
-        const BCB::KeyboardButtonEvent @kbe = cast<const BCB::KeyboardButtonEvent@>(e);
-
-        print(tostring(e.type) + " " + tostring(kbe.getButton()) + " " + tostring(kbe.action));
-    } else if (e.type == BCB::ButtonEventType::CONTROLLER) {
-        const BCB::ControllerButtonEvent @pad = cast<const BCB::ControllerButtonEvent@>(e);
-
-        print(tostring(e.type) + " " + tostring(pad.getButton()) + " " + tostring(pad.action));
-    }
-}
-
 void Main() {
     const string pluginName = Icons::Camera + " Better Camera Bindings" + (isDevMode() ? " DEV" : "");
     g_mainWindowLabel = pluginName + "###BCBmainWindow" + (isDevMode() ? "DEV" : "");
     g_menuItemLabel = pluginName + "###BCBmenuItem" + (isDevMode() ? "DEV" : "");
 
     g_bindingsData = "v1;100;2;XInput Pad;3;8;18;0;100;0;XInput Pad;3;9;20;0;100;2;XInput Pad;3;23;21;2";
+    //g_bindingsData = "100;2;XInput Pad;3;8;18;100;0;XInput Pad;3;9;20;100;2;XInput Pad;3;23;21";
 
     g_bindingsManager.loadData();
     g_bindingsManager.bindingsEnabled = g_bindingsEnabled;

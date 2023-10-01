@@ -1,11 +1,28 @@
 namespace BCB {
 
-// only supports toFind to be of length 1
-int findFirstOf(const string &in str, const string &in toFind) {
-    if (toFind.Length > 1) return -1;
+class IdxWrapper {
+    bool valid = false;
+    uint i = 0;
 
+    void reset() {
+        this.valid = false;
+        this.i = 0;
+    }
+
+    void set(uint i) {
+        this.i = i;
+        this.valid = true;
+    }
+}
+
+// finds first char in str that matches any char in toFind
+int findFirstOf(const string &in str, const string &in toFind) {
     for (int i = 0; i < str.Length; ++i) {
-        if (str.SubStr(i, 1) == toFind) return i;
+        const string currentChar = str.SubStr(i, 1);
+
+        for (int j = 0; j < toFind.Length; ++j) {
+            if (currentChar == toFind.SubStr(j, 1)) return i;
+        }
     }
 
     return -1;

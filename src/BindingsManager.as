@@ -103,35 +103,26 @@ class BindingsManager {
     }
 
     void loadData() {
-        if (g_bindingsData.Length == 0) {
+
+        const auto @tokens = g_bindingsData.Split(";");
+
+        if (tokens.Length == 0) {
             this.dataLoaded = true;
             return;
-        } else if (g_bindingsData.SubStr(0, 1) != "v") {
-            this.loadUnversionedData();
+        } else if (tokens[0].SubStr(0, 1) != "v") {
+            this.loadUnversionedData(tokens);
             this.saveData();
+        } else if (tokens[0] == "v1"){
+            this.loadV1Data(tokens);
         } else {
-            int idx = findFirstOf(g_bindingsData, ";");
-            if (idx < 0) {
-                g_bindingsData = "";
-                this.dataLoaded = true;
-                return;
-            }
-
-            string version = g_bindingsData.SubStr(0, idx);
-            if (version == "v1") {
-                this.loadV1Data();
-            } else {
-                g_bindingsData = "";
-                this.dataLoaded = true;
-                return;
-            }
+            g_bindingsData = "";
+            this.dataLoaded = true;
+            return;
         }
     }
 
     // example: "v1;100;2;XInput Pad;3;8;18;0;100;0;XInput Pad;3;9;20;0;100;2;XInput Pad;3;23;21;2"
-    void loadV1Data() {
-        auto tokens = g_bindingsData.Split(";");
-
+    void loadV1Data(const string[] @tokens) {
         if ((tokens.Length - 1) % 7 != 0) {
             g_bindingsData = "";
             this.dataLoaded = true;
@@ -155,9 +146,7 @@ class BindingsManager {
     }
 
     // example: "100;2;XInput Pad;3;8;18;100;0;XInput Pad;3;9;20;100;2;XInput Pad;3;23;21"
-    void loadUnversionedData() {
-        auto tokens = g_bindingsData.Split(";");
-
+    void loadUnversionedData(const string[] @tokens) {
         if (tokens.Length % 6 != 0) {
             g_bindingsData = "";
             this.dataLoaded = true;
