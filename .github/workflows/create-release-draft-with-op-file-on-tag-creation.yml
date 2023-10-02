@@ -16,8 +16,14 @@ jobs:
         uses: actions/checkout@v4
       - name: zip files into BetterCameraBindings.op
         run: zip -r -q BetterCameraBindings.op info.toml src
+      - name: creating title for release draft
+        id: release-draft-title
+        run: echo "title=Better Camera Bindings $(echo ${{ github.ref_name }} | sed s/v//)" >> "$GITHUB_OUTPUT"
       - name: Create release draft with .op file
         uses: ncipollo/release-action@v1
         with:
+          name: ${{ steps.release-draft-title.outputs.title }}
+          body: "## Changelog\n\n* INSERT CHANGES HERE"
           artifacts: BetterCameraBindings.op
           draft: true
+          token: ${{ secrets.CREATE_RELEASE_DRAFT }}
