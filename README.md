@@ -1,5 +1,5 @@
 # Better Camera Bindings
-With this plugin you can create your own camera bindings.
+[Openplanet](https://openplanet.dev/) plugin, which allows you to create custom bindings for cam1, cam2, cam3 and backwards cam in Trackmania (2020).
 
 ### **Features**
 - Create bindings that only use normal or alt camera.
@@ -11,7 +11,7 @@ With this plugin you can create your own camera bindings.
 
 Don't forget to unbind the buttons you want to use in the nadeo settings.
 
-For feedback / suggestions / issues write an issue on github or dm me @hydrophob on discord / twitch.
+For feedback / suggestions / issues write an [issue on github](https://github.com/aloehr/BetterCameraBindings/issues) or dm me @hydrophob on discord / twitch.
 Since I was only able to test the plugin with Keyboard, XBox One Controller and PS4 Controller,
 it would be goot to know if there are issues with other devices.
 
