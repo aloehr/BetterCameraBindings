@@ -68,6 +68,16 @@ class DeviceInfo {
 // callback defintion
 funcdef void ButtonEventCallback(const ButtonEvent @event);
 
+class DeviceState {
+    int id;
+    uint idleDurationOnUpdate = uint(-1);
+    array<bool> buttonDownStates(int(CInputScriptPad::EButton::None) + 1, false);
+
+    DeviceState(int deviceID) {
+        this.id = deviceID;
+    }
+}
+
 class ButtonEventPublisher {
     private dictionary subscribers;
     private array<ButtonEventCallback@> broadcastSubs;
@@ -170,31 +180,14 @@ class ButtonEventPublisher {
 
             const string deviceIDString = tostring(sp.ControllerId);
 
-            array<bool>@ deviceState = null;
+            DeviceState @state = null;
 
             if (!this.deviceStates.Exists(deviceIDString)) {
-                @deviceState = array<bool>(int(CInputScriptPad::EButton::None) + 1, false);
-                @this.deviceStates[deviceIDString] = deviceState;
+                @state = DeviceState(sp.ControllerId);
+                @this.deviceStates[deviceIDString] = state;
             } else {
-                @deviceState = cast<bool[]@>(this.deviceStates[deviceIDString]);
+                @state = cast<DeviceState@>(this.deviceStates[deviceIDString]);
             }
-
-
-            // controller buttons
-            checkButtonState(CInputScriptPad::EButton::Left, sp.Left, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::Right, sp.Right, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::Up, sp.Up, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::Down, sp.Down, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::A, sp.A, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::B, sp.B, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::X, sp.X, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::Y, sp.Y, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::L1, sp.L1, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::R1, sp.R1, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::LeftStick, sp.LeftStickBut, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::RightStick, sp.RightStickBut, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::Menu, sp.Menu, deviceState, sp.ControllerId);
-            checkButtonState(CInputScriptPad::EButton::View, sp.View, deviceState, sp.ControllerId);
 
 
             // L2
@@ -203,7 +196,7 @@ class ButtonEventPublisher {
             if (sp.Type == CInputScriptPad::EPadType::PlayStation) {
                 value = (value + 1.f) * 0.5f;
             }
-            checkAnalogButtonState(CInputScriptPad::EButton::L2, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::L2, value, state);
 
 
             // R2
@@ -212,29 +205,57 @@ class ButtonEventPublisher {
             if (sp.Type == CInputScriptPad::EPadType::PlayStation) {
                 value = (value + 1.f) * 0.5f;
             }
-            checkAnalogButtonState(CInputScriptPad::EButton::R2, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::R2, value, state);
 
 
             // Left Stick
             value = Math::Clamp(sp.LeftStickX, -1.f, 0.f) * -1.f;
-            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Left, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Left, value, state);
             value = Math::Clamp(sp.LeftStickX, 0.f, 1.f);
-            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Right, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Right, value, state);
             value = Math::Clamp(sp.LeftStickY, -1.f, 0.f) * -1.f;
-            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Down, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Down, value, state);
             value = Math::Clamp(sp.LeftStickY, 0.f, 1.f);
-            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Up, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::LeftStick_Up, value, state);
 
 
             // Right Stick
             value = Math::Clamp(sp.RightStickX, -1.f, 0.f) * -1.f;
-            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Left, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Left, value, state);
             value = Math::Clamp(sp.RightStickX, 0.f, 1.f);
-            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Right, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Right, value, state);
             value = Math::Clamp(sp.RightStickY, -1.f, 0.f) * -1.f;
-            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Down, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Down, value, state);
             value = Math::Clamp(sp.RightStickY, 0.f, 1.f);
-            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Up, value, deviceState, sp.ControllerId);
+            checkAnalogButtonState(CInputScriptPad::EButton::RightStick_Up, value, state);
+
+
+
+            // idle duration for analog input only goes to zero when the analog input is ~0.8 or greater.
+            // that means we always have to check analog inputs because currently we trigger press on >= 0.5
+            // and release on <= 0.3
+            if (state.idleDurationOnUpdate < sp.IdleDuration) continue;
+
+
+            // controller buttons
+            checkButtonState(CInputScriptPad::EButton::Left, sp.Left, state);
+            checkButtonState(CInputScriptPad::EButton::Right, sp.Right, state);
+            checkButtonState(CInputScriptPad::EButton::Up, sp.Up, state);
+            checkButtonState(CInputScriptPad::EButton::Down, sp.Down, state);
+            checkButtonState(CInputScriptPad::EButton::A, sp.A, state);
+            checkButtonState(CInputScriptPad::EButton::B, sp.B, state);
+            checkButtonState(CInputScriptPad::EButton::X, sp.X, state);
+            checkButtonState(CInputScriptPad::EButton::Y, sp.Y, state);
+            checkButtonState(CInputScriptPad::EButton::L1, sp.L1, state);
+            checkButtonState(CInputScriptPad::EButton::R1, sp.R1, state);
+            checkButtonState(CInputScriptPad::EButton::LeftStick, sp.LeftStickBut, state);
+            checkButtonState(CInputScriptPad::EButton::RightStick, sp.RightStickBut, state);
+            checkButtonState(CInputScriptPad::EButton::Menu, sp.Menu, state);
+            checkButtonState(CInputScriptPad::EButton::View, sp.View, state);
+
+
+            // get the idle duration
+            state.idleDurationOnUpdate = sp.IdleDuration;
         }
     }
 
@@ -255,18 +276,17 @@ class ButtonEventPublisher {
     private void checkButtonState(
         const CInputScriptPad::EButton button,
         const uint pressedDuration,
-        bool[] @deviceState,
-        int deviceID
+        DeviceState @state
     ) {
-        if (deviceState[button]) {
+        if (state.buttonDownStates[button]) {
             if (pressedDuration == 0) {
-                sendEvent(ControllerButtonEvent(deviceID, ButtonAction::RELEASED, int(button)));
-                deviceState[button] = false;
+                sendEvent(ControllerButtonEvent(state.id, ButtonAction::RELEASED, int(button)));
+                state.buttonDownStates[button] = false;
             }
         } else {
             if (pressedDuration > 0) {
-                sendEvent(ControllerButtonEvent(deviceID, ButtonAction::PRESSED, int(button)));
-                deviceState[button] = true;
+                sendEvent(ControllerButtonEvent(state.id, ButtonAction::PRESSED, int(button)));
+                state.buttonDownStates[button] = true;
             }
         }
     }
@@ -275,18 +295,17 @@ class ButtonEventPublisher {
     private void checkAnalogButtonState(
         const CInputScriptPad::EButton button,
         const float value,
-        bool[] @deviceState,
-        int deviceID
+        DeviceState @state
     ) {
-        if (deviceState[button]) {
+        if (state.buttonDownStates[button]) {
             if (value <= 0.3f) {
-                sendEvent(ControllerButtonEvent(deviceID, ButtonAction::RELEASED, int(button)));
-                deviceState[button] = false;
+                sendEvent(ControllerButtonEvent(state.id, ButtonAction::RELEASED, int(button)));
+                state.buttonDownStates[button] = false;
             }
         } else {
             if (value >= 0.5f) {
-                sendEvent(ControllerButtonEvent(deviceID, ButtonAction::PRESSED, int(button)));
-                deviceState[button] = true;
+                sendEvent(ControllerButtonEvent(state.id, ButtonAction::PRESSED, int(button)));
+                state.buttonDownStates[button] = true;
             }
         }
     }
